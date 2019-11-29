@@ -76,12 +76,12 @@ contract Project is CommonUtilities {
 
     event participantAdded(address participant);
     event participantRemoved(address participant);
-    event fileReplaced(string fileHash);
+    event fileAdded(string fileHash);
     event fileDeleted();
     event contractFinalized();
     event contractCancelled();
 
-    constructor() CommonUtilities(tx.origin)
+    constructor(address payable _owner) CommonUtilities(_owner)
     public {
         parentContract = msg.sender;
     }
@@ -112,13 +112,14 @@ contract Project is CommonUtilities {
     }
 
     function getProjectData() public view
-    returns (bool isProjectClosed, address vontingInProcess, string memory fileHash) {
+    returns (address parent, address test,bool isProjectClosed, address vontingInProcess, string memory fileHash) {
         isOwnerOrParticipant();
-        return (closed, participantToRemove, file);
+        return (parentContract, owner, closed, participantToRemove, file);
     }
 
     function addParticipant(address _addr) public payable {
         isOwner();
+        require(owner != _addr, "The owner can't be a participant.");
         isNotClosed();
         require(payments[_addr] == 0, "This participant already exists.");
         require(msg.value > 0, "The participant's payment must be greater than 0.");
@@ -162,14 +163,11 @@ contract Project is CommonUtilities {
         require(participantsNum > 1, "You can't start a voting with just one participant.");
         participantToRemove = _addr;
         votes = 0;
-        if(participantsNum == 1 || participantsNum == 2) {
+        if(participantsNum <= 2) {
             votesRequired = 1;
         }
         else {
             votesRequired = participantsNum / 2 + 1;
-            if(votesRequired >= participantsNum) {
-                votesRequired = participantsNum - 1;
-            }
         }
     }
 
@@ -180,8 +178,8 @@ contract Project is CommonUtilities {
         participantToRemove = address(0x0);
     }
     function voteForRemoval() public {
-        isNotClosed();
         isParticipant(msg.sender);
+        isNotClosed();
         isVotinginProcess();
         require(participantToRemove != msg.sender, "You can't vote in your own removal.");
         require(participantsVote[msg.sender] == false, "You already voted.");
@@ -194,8 +192,8 @@ contract Project is CommonUtilities {
     }
 
     function leaveContract() public payable {
-        isNotClosed();
         isParticipant(msg.sender);
+        isNotClosed();
         require(participantToRemove == msg.sender || participantToRemove == address(0x0), 'There is a removal voting in process.');
         removeParticipant(msg.sender);
         if(participantToRemove == msg.sender) {
@@ -205,8 +203,8 @@ contract Project is CommonUtilities {
 
     function getParticipant(address _addr) public view
     returns (address paticipantAddress, uint participantPayment, bool paymentClaimed) {
-        isParticipant(_addr);
         isOwnerOrParticipant();
+        isParticipant(_addr);
         return (_addr, payments[_addr], claimed[_addr]);
     }
 
@@ -219,14 +217,15 @@ contract Project is CommonUtilities {
         return "";
     }
 
-    function replaceFile(string memory _fileHash) public {
+    function addFile(string memory _fileHash) public {
         isOwner();
         isNotClosed();
+        require(keccak256(abi.encodePacked(_fileHash)) != keccak256(abi.encodePacked(file)), "File hash must be different.");
         file = _fileHash;
         if(bytes(_fileHash).length == 0) {
             emit fileDeleted();
         } else {
-            emit fileReplaced(_fileHash);
+            emit fileAdded(_fileHash);
         }
     }
 
@@ -245,18 +244,18 @@ contract Project is CommonUtilities {
     }
 
     function finalize() public {
-        isNotClosed();
         isParentContract();
+        isNotClosed();
         require(participantsNum > 0, 'You can\'t finalize a project without adding any participant.');
         closed = true;
         emit contractFinalized();
     }
 
     function cancel() public payable {
-        isNotClosed();
         isParentContract();
+        isNotClosed();
         require(participantsNum == 0, 'All participants must leave before cancelling the contract.');
-        selfdestruct(owner);
         emit contractCancelled();
+        selfdestruct(owner);
     }
 }

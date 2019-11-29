@@ -3,16 +3,29 @@ import './Project.sol';
 
 contract ProjectManager is CommonUtilities {
     Addresses projects;
-    address payable owner;
 
     event projectAdded(address project);
 
     constructor() CommonUtilities(msg.sender) public  {}
 
+    function projectExist(address _addr) internal view {
+        require(
+            projects.addressIndexes[_addr][NEXT] != address(0x0)||
+            projects.addressIndexes[_addr][PREV] != address(0x0)||
+            projects.addressIndexes[address(0x0)][NEXT] == _addr,
+            'Project doesn\'t exist.'
+        );
+    }
+
+    function isPMContract() public pure
+    returns (bool isValidPMContract){
+        return true;
+    }
+
     function addProject() public
     returns (address addressContract) {
         isOwner();
-        Project p = new Project();
+        Project p = new Project(owner);
         addElement(projects, address(p));
         emit projectAdded(address(p));
         return address(p);
@@ -20,32 +33,19 @@ contract ProjectManager is CommonUtilities {
 
     function getProjects() public view
     returns (string memory projectAddresses) {
-        isOwner();
         return  getAddressesString(projects);
     }
 
     function finalizeProject(address _addr) public {
         isOwner();
-        require(
-            projects.addressIndexes[_addr][NEXT] != address(0x0)||
-            projects.addressIndexes[_addr][NEXT] != address(0x0)||
-            projects.addressIndexes[address(0x0)][NEXT] == _addr,
-            'Project doesn\'t exist.'
-        );
-        // Stitch the neighbours together
+        projectExist(_addr);
         Project p = Project(_addr);
         p.finalize();
     }
 
     function deleteProject(address _addr) public {
         isOwner();
-        require(
-            projects.addressIndexes[_addr][NEXT] != address(0x0)||
-            projects.addressIndexes[_addr][NEXT] != address(0x0)||
-            projects.addressIndexes[address(0x0)][NEXT] == _addr,
-            'Project doesn\'t exist.'
-        );
-        // Stitch the neighbours together
+        projectExist(_addr);
         Project p = Project(_addr);
         p.cancel();
         removeElement(projects, address(p));
