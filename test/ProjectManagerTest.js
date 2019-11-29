@@ -25,6 +25,19 @@ contract("ProjectManager Contract", async accounts => {
         }
     });
 
+    it("allows to check if this is a valid ProjectManagerContract.", async () => {
+        let isValidPMContract = await managerContract.isPMContract();
+        assert.equal(isValidPMContract, true);
+        let projectsAddresses = await managerContract.getProjects.call();
+        let notAValidManagerContract = await ProjectManager.at(projectsAddresses.split(',')[0]);
+        try {
+            isValidPMContract = await notAValidManagerContract.isPMContract();
+            assert.fail()
+        } catch(e) {
+            assert.ok(/revert/.test(e.message));
+        }
+    });
+
     it("does not allow to delete or finalize a project that doesn't exist.", async () => {
         try {
             await managerContract.deleteProject('0x4dE7F4fE6ec8622C21ADBF19accbB172dbbA29e5');
@@ -40,24 +53,13 @@ contract("ProjectManager Contract", async accounts => {
         }
     });
 
-    it("does not allow to get all project by other users", async () => {
-        try {
-            await managerContract.getProjects.call({from: secondAcc});
-            assert.fail();
-        } catch (e) {
-            assert.ok(/You aren't the owner of this contract/.test(e.message));
-        }
-    });
-
-    it("does not allow to finalize a project that has no participants.", async () => {
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
-        try {
-            await managerContract.finalizeProject(projectAddress);
-            assert.fail();
-        } catch (e) {
-            assert.ok(/You can't finalize a project without adding any participant/.test(e.message));
-        }
+    it("allows to get all project related to this contract.", async () => {
+        // owner
+        await managerContract.getProjects.call();
+        // participants
+        await managerContract.getProjects.call({from: secondAcc});
+        // not related user
+        await managerContract.getProjects.call({from: thirdAcc});
     });
 
     it("does not allow to delete or finalize a project without doing it through the project manager contract", async () => {
@@ -75,6 +77,17 @@ contract("ProjectManager Contract", async accounts => {
             assert.fail();
         } catch (e) {
             assert.ok(/parent contract/.test(e.message));
+        }
+    });
+
+    it("does not allow to finalize a project that has no participants.", async () => {
+        let projectsAddresses = await managerContract.getProjects.call();
+        let projectAddress = projectsAddresses.split(',')[0];
+        try {
+            await managerContract.finalizeProject(projectAddress);
+            assert.fail();
+        } catch (e) {
+            assert.ok(/You can't finalize a project without adding any participant/.test(e.message));
         }
     });
 
@@ -106,5 +119,12 @@ contract("ProjectManager Contract", async accounts => {
         } catch (e) {
             assert.ok(/The contract is already closed/.test(e.message));
         }
+    });
+
+    it("allows to delete a project that has no participants.", async () => {
+        await managerContract.addProject();
+        let projectsAddresses = await managerContract.getProjects.call();
+        let projectAddress = projectsAddresses.split(',')[0];
+        await managerContract.deleteProject(projectAddress);
     });
 });

@@ -10,12 +10,19 @@ contract("Project Contract", async accounts => {
     let sixthAcc = accounts[5];
     let managerContract;
     let projectContract;
+    let otherProjectContract;
+    let yetAnotherProjectContract;
 
     before(async () => {
         managerContract = await ProjectManager.deployed();
-        managerContract.addProject();
-        let projectsAddresses = await managerContract.getProjects.call();
-        projectContract = await Project.at(projectsAddresses.split(',')[0]);
+        await managerContract.addProject();
+        await managerContract.addProject();
+        await managerContract.addProject();
+        let res = await managerContract.getProjects()
+        res = res.split(',');
+        projectContract = await Project.at(res[0]);
+        otherProjectContract = await Project.at(res[1]);
+        yetAnotherProjectContract = await Project.at(res[2]);
     })
 
     it("allows participants's addition by the owner.", async () => {
@@ -23,6 +30,15 @@ contract("Project Contract", async accounts => {
         await projectContract.addParticipant(thirdAcc, {value: 1});
         await projectContract.addParticipant(fourthAcc, {value: 1});
         await projectContract.addParticipant(fifthAcc, {value: 1});
+    })
+
+    it("does not allow the owner to be a participant.", async () => {
+        try {
+            await projectContract.addParticipant(firstAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The owner can't be a participant./.test(e.message))
+        }
     })
 
     it("does not allow repeated participants", async () => {
@@ -76,13 +92,18 @@ contract("Project Contract", async accounts => {
         }
     })
 
-    it("allow participants, owner and parent contract to get all participant's address.", async () => {
+    it("allow participants, owner and parent contract to get all participants's address.", async () => {
         // owner
         await projectContract.getAllParticipants.call();
         // participant
         await projectContract.getAllParticipants.call({from: secondAcc});
         // parent contract
         await projectContract.getAllParticipants.call({from: managerContract.address});
+    })
+
+    it("if there are not any participants where trying to get all participants's address, you get an empty string.", async () => {
+        let result = await otherProjectContract.getAllParticipants.call();
+        assert.equal(result, "");
     })
 
     it("does not allow any user besides participants, owner and parent contract to get all participant's address.", async () => {
@@ -94,7 +115,7 @@ contract("Project Contract", async accounts => {
         }
     })
 
-    it("allow participants, owner and parent contract to get a participant's data, including his own.", async () => {
+    it("allow participants, owner and parent contract to get a participant's data, including his/her own.", async () => {
         // owner
         await projectContract.getParticipant.call(secondAcc);
         // participant
@@ -112,6 +133,15 @@ contract("Project Contract", async accounts => {
         }
     })
 
+    it("does not allow to get a participant's data of a participant that doesn't exist.", async () => {
+        try {
+            await projectContract.getParticipant.call(sixthAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/This participant doesn't exist/.test(e.message));
+        }
+    })
+
     it("allows the onwer to start a voting to remove a participant.", async () => {
         await projectContract.votingToRemoveParticipant(fifthAcc);
     })
@@ -123,6 +153,22 @@ contract("Project Contract", async accounts => {
         } catch(e) {
             assert.ok(/There is a voting already in process/.test(e.message));
         }
+    })
+
+    it("does not allow to start a voting while there is only one participant.", async () => {
+        await otherProjectContract.addParticipant(secondAcc, {value: 1});
+        try {
+            await otherProjectContract.votingToRemoveParticipant(secondAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/You can't start a voting with just one participant/.test(e.message));
+        }
+    })
+
+    it("allow to start a voting where there are at least two participants.", async () => {
+        await otherProjectContract.addParticipant(thirdAcc, {value: 1});
+        await otherProjectContract.votingToRemoveParticipant(thirdAcc);
+        await otherProjectContract.cancelParticipantVoting();
     })
 
     it("does not allow any other user to start a voting to remove a participant.", async () => {
@@ -205,16 +251,36 @@ contract("Project Contract", async accounts => {
         } catch(e) {
             assert.ok(/This participant doesn't exist./.test(e.message));
         }
-        await projectContract.addParticipant(fifthAcc, {value: 1});
+    })
+
+    it("allow participants to leave when the contract is not finalized and there is no voting in process.", async () => {
+        await projectContract.addParticipant(sixthAcc, {value: 1});
+        await projectContract.leaveContract({from: sixthAcc});
+        try {
+            await projectContract.getParticipant.call(sixthAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/This participant doesn't exist./.test(e.message));
+        }
     })
 
     it("does not allow a participant to leave while a voting is in process and he/she isn't the target of the voting.", async () =>{
+        await projectContract.addParticipant(fifthAcc, {value: 1});
         await projectContract.votingToRemoveParticipant(fifthAcc);
         try {
             await projectContract.leaveContract({from: secondAcc});
             assert.fail();
         } catch(e) {
             assert.ok(/There is a removal voting in process/.test(e.message));
+        }
+    })
+
+    it("does not allow any other users besides participants to call the leave function.", async () =>{
+        try {
+            await projectContract.leaveContract({from: sixthAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/This participant doesn't exist./.test(e.message));
         }
     })
 
@@ -226,11 +292,149 @@ contract("Project Contract", async accounts => {
         assert.notEqual(votingStatus.participant, fifthAcc);
     })
 
-    // it("does not allows the participant who is the target of the voting to leave on his/her own and ends the voting process.", async () =>{
-    //     let votingStatus = await projectContract.currentVoting.call();
-    //     assert.equal(votingStatus.participant, fifthAcc);
-    //     await projectContract.leaveContract({from: fifthAcc});
-    //     votingStatus = await projectContract.currentVoting.call();
-    //     assert.notEqual(votingStatus.participant, fifthAcc);
+    it("allows the owner to cancel a voting.", async () => {
+        await projectContract.votingToRemoveParticipant(secondAcc);
+        await projectContract.cancelParticipantVoting();
+    })
+
+    it("does not allow to cancel a voting where isn't a voting in process.", async () => {
+        try {
+            await projectContract.cancelParticipantVoting();
+        } catch(e) {
+            assert.ok(/There isn't a voting in process/.test(e.message));
+        }
+    })
+
+    it("allows the owner to add or replace the file of the contract.", async () => {
+        let res = await projectContract.addFile("test");
+        assert.equal(res.logs[0].event, 'fileAdded');
+    })
+
+    it("does not allow to add the same file.", async () => {
+        try {
+            await projectContract.addFile("test");
+        } catch(e) {
+            assert.ok(/File hash must be different./.test(e.message))
+        }
+    })
+
+    it("allows the owner to delete the file by setting it as empty string.", async () => {
+        let res = await projectContract.addFile("");
+        assert.equal(res.logs[0].event, 'fileDeleted');
+    })
+
+    it("allows the owner, parent contract and participants to get the file.", async () => {
+        // owner
+        await projectContract.getFile.call();
+        // parent contract
+        await projectContract.getFile.call({from: managerContract.address});
+        // participant
+        await projectContract.getFile.call({from: thirdAcc});
+    })
+
+    it("doest not allow any other user besides the owner, parent contract and participants to get the file.", async () => {
+        try {
+            await projectContract.getFile.call({from: sixthAcc});
+            assert.fail()
+        } catch(e) {
+            assert.ok(/You aren't the owner or a participant of this contract/.test(e.message));
+        }
+    })
+
+    it("does not allow participants to claim their payments if the contract is not finalized.", async () => {
+        try {
+            await projectContract.claimPayment({from: thirdAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is not closed yet./.test(e.message));
+        }
+    })
+
+    it("allows participants to claim their payments after the contract is finalized.", async () => {
+        await managerContract.finalizeProject(projectContract.address);
+        await projectContract.claimPayment({from: thirdAcc});
+    })
+
+    it("does not allow participants to claim their payments twice.", async () => {
+        try {
+            await projectContract.claimPayment({from: thirdAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/You already claimed your payment./.test(e.message));
+        }
+    })
+
+    it("does not allow any other user besides participants to claim payments.", async () => {
+        try {
+            await projectContract.claimPayment({from: sixthAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/This participant doesn't exist./.test(e.message));
+        }
+    })
+
+    it("does not allow to add participants the contract after it was finalized", async () => {
+        try {
+            await projectContract.addParticipant(sixthAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
+
+    it("does not allow to start or cancel a voting in the contract after it was finalized", async () => {
+        try {
+            await projectContract.cancelParticipantVoting();
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+        try {
+            await projectContract.votingToRemoveParticipant(thirdAcc);
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
+
+    it("does not allow the participants to vote after the contract was finalized", async () => {
+        try {
+            await projectContract.voteForRemoval({from: thirdAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
+
+    it("does not allow the participants to leave after the contract was finalized", async () => {
+        try {
+            await projectContract.leaveContract({from: thirdAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
+
+    it("does not allow to add or replace the file of the contract after it was finalized", async () => {
+        try {
+            await projectContract.addFile("test2");
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
+
+    it("does not allow to delete a project with participants.", async () => {
+        await yetAnotherProjectContract.addParticipant(secondAcc, {value: 1});
+        try {
+            await managerContract.deleteProject(yetAnotherProjectContract.address);
+            assert.fail();
+        } catch (e) {
+            assert.ok(/All participants must leave before cancelling the contract/.test(e.message));
+        }
+    });
+
+    // it("", async () => {
+
     // })
 });
