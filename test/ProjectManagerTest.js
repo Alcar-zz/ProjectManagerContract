@@ -12,34 +12,16 @@ contract("ProjectManager Contract", async accounts => {
     })
 
     it("allows project's creation by the owner.", async () => {
-        let projectAddress = await managerContract.addProject('test');
+        let projectAddress = await managerContract.addProject();
         assert(projectAddress, 'project created');
     });
 
     it("does not allow project's creation by other user.", async () => {
         try {
-            projectAddress = await managerContract.addProject('test2', {from: secondAcc});
+            projectAddress = await managerContract.addProject({from: secondAcc});
             assert.fail();
         }catch (e) {
             assert.ok(/You aren't the owner of this contract/.test(e.message));
-        }
-    });
-
-    it("does not allow project's creation with empty name", async () => {
-        try {
-            await managerContract.addProject('');
-            assert.fail();
-        }catch (e) {
-            assert.ok(/Project name required/.test(e.message));
-        }
-    });
-
-    it("does not allow project's creation with an used name", async () => {
-        try {
-            await managerContract.addProject('test');
-            assert.fail();
-        } catch (e) {
-            assert.ok(/Name already in use/.test(e.message));
         }
     });
 
@@ -74,7 +56,7 @@ contract("ProjectManager Contract", async accounts => {
             await managerContract.finalizeProject(projectAddress);
             assert.fail();
         } catch (e) {
-            assert.ok(/There aren't any participants yet/.test(e.message));
+            assert.ok(/You can't finalize a project without adding any participant/.test(e.message));
         }
     });
 
@@ -105,7 +87,6 @@ contract("ProjectManager Contract", async accounts => {
             await managerContract.finalizeProject(projectAddress);
             assert.ok(true);
         } catch (e) {
-            console.log(e.message);
             assert.fail();
         }
     });
