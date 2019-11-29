@@ -3,34 +3,29 @@ import './Project.sol';
 
 contract ProjectManager is CommonUtilities {
     Addresses projects;
-    mapping(string => bool) projectsNames;
     address payable owner;
 
-    event projectAdded(address project, string name);
+    event projectAdded(address project);
 
     constructor() CommonUtilities(msg.sender) public  {}
 
-    function addProject(string memory _name) public
-    isOwner
+    function addProject() public
     returns (address addressContract) {
-        require(bytes(_name).length > 0, 'Project name required.');
-        require(projectsNames[_name] == false, 'Name already in use.');
-        Project p = new Project(_name);
+        isOwner();
+        Project p = new Project();
         addElement(projects, address(p));
-        projectsNames[_name] = true;
-        emit projectAdded(address(p), _name);
+        emit projectAdded(address(p));
         return address(p);
     }
 
     function getProjects() public view
-    isOwner
     returns (string memory projectAddresses) {
+        isOwner();
         return  getAddressesString(projects);
     }
 
-    function finalizeProject(address _addr) public
-    isOwner
-    {
+    function finalizeProject(address _addr) public {
+        isOwner();
         require(
             projects.addressIndexes[_addr][NEXT] != address(0x0)||
             projects.addressIndexes[_addr][NEXT] != address(0x0)||
@@ -42,7 +37,8 @@ contract ProjectManager is CommonUtilities {
         p.finalize();
     }
 
-    function deleteProject(address _addr) public isOwner {
+    function deleteProject(address _addr) public {
+        isOwner();
         require(
             projects.addressIndexes[_addr][NEXT] != address(0x0)||
             projects.addressIndexes[_addr][NEXT] != address(0x0)||
@@ -51,9 +47,7 @@ contract ProjectManager is CommonUtilities {
         );
         // Stitch the neighbours together
         Project p = Project(_addr);
-        (string memory _name,,,) = p.getProjectData();
         p.cancel();
         removeElement(projects, address(p));
-        delete projectsNames[_name];
     }
 }

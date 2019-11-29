@@ -13,9 +13,8 @@ contract CommonUtilities {
         mapping(address =>  mapping(bool => address)) addressIndexes;
     }
 
-    modifier isOwner() {
+    function isOwner() internal view {
         require(msg.sender == owner, 'You aren\'t the owner of this contract');
-        _;
     }
 
     function getAddressesString(Addresses storage addresses) internal view
@@ -63,14 +62,13 @@ contract CommonUtilities {
 }
 
 contract Project is CommonUtilities {
-    address payable parentContract;
+    address parentContract;
     Addresses participants;
     mapping(address => uint) payments;
     mapping(address => bool) claimed;
     string file;
-    bool closed = false;
-    uint participantsNum = 0;
-    string name;
+    bool closed;
+    uint participantsNum;
     address participantToRemove;
     mapping(address => bool) participantsVote;
     uint votesRequired;
@@ -83,63 +81,47 @@ contract Project is CommonUtilities {
     event contractFinalized();
     event contractCancelled();
 
-    constructor(string memory _name) CommonUtilities(tx.origin)
+    constructor() CommonUtilities(tx.origin)
     public {
         parentContract = msg.sender;
-        name = _name;
     }
 
-    modifier isParentContract() {
-        require(msg.sender == parentContract, 'This must be called by the parent contract of this contract');
-        _;
-    }
-
-    modifier isNotClosed() {
+    function isNotClosed() internal view  {
         require(false == closed, 'The contract is already closed.');
-        _;
     }
 
-    modifier isClosed() {
-        require(true == closed, 'The contract is not closed yet.');
-        _;
-    }
-
-    modifier isOwnerOrParticipant() {
+    function isOwnerOrParticipant() internal view {
         require(
             msg.sender == owner||
             msg.sender == parentContract||
-            payments[msg.sender] > 0||
-            claimed[msg.sender] == true,
+            payments[msg.sender] > 0,
             'You aren\'t the owner or a participant of this contract'
         );
-        _;
     }
 
-    modifier isParticipant(address _addr){
-        require(payments[_addr] > 0 || claimed[_addr] == true, 'This participant doesn\'t exist.');
-        _;
+    function isParticipant(address _addr) internal view {
+        require(payments[_addr] > 0, 'This participant doesn\'t exist.');
     }
 
-    modifier isVotinginProcess(){
+    function isVotinginProcess() internal view {
         require(participantToRemove != address(0x0), "There isn't a voting in process.");
-        _;
     }
 
-    modifier hasParticipants(){
-        require(participants.addressIndexes[address(0x0)][NEXT] != address(0x0), 'There aren\'t any participants yet.');
-        _;
+    function isParentContract() internal view {
+        require(msg.sender == parentContract, 'Must be called by the parent contract of this contract');
     }
 
     function getProjectData() public view
-    isOwnerOrParticipant
-    returns (string memory projectName, bool isProjectClosed, address vontingInProcess, string memory fileHash) {
-        return (name, closed, participantToRemove, file);
+    returns (bool isProjectClosed, address vontingInProcess, string memory fileHash) {
+        isOwnerOrParticipant();
+        return (closed, participantToRemove, file);
     }
 
-    function addParticipant(address _addr) public payable
-    isOwner isNotClosed {
-        require(payments[msg.sender] == 0, "This participant already exists.");
-        require(msg.value > 0, "Participant's payment must be greater than 0.");
+    function addParticipant(address _addr) public payable {
+        isOwner();
+        isNotClosed();
+        require(payments[_addr] == 0, "This participant already exists.");
+        require(msg.value > 0, "The participant's payment must be greater than 0.");
         addElement(participants, _addr);
         payments[_addr] = msg.value;
         participantsNum++;
@@ -150,21 +132,10 @@ contract Project is CommonUtilities {
         uint amount = payments[_addr];
         removeElement(participants, _addr);
         delete payments[_addr];
+        delete participantsVote[_addr];
         participantsNum--;
         owner.transfer(amount);
         emit participantRemoved(_addr);
-    }
-
-    function calculateVotesRequired() internal {
-        if(participantsNum == 1 || participantsNum == 2) {
-            votesRequired = 1;
-        }
-        else {
-            votesRequired = participantsNum / 2 + 1;
-            if(votesRequired >= participantsNum) {
-                votesRequired = participantsNum - 1;
-            }
-        }
     }
 
     function votingSuccess() internal {
@@ -177,21 +148,43 @@ contract Project is CommonUtilities {
         }
     }
 
-    function votingToRemoveParticipant(address _addr) public
-    isOwner isNotClosed isParticipant(_addr) {
+    function currentVoting() public view
+    returns(address participant, uint currentNumber, uint NumberRequired) {
+        isOwnerOrParticipant();
+        return (participantToRemove, votes, votesRequired);
+    }
+
+    function votingToRemoveParticipant(address _addr) public {
+        isOwner();
+        isNotClosed();
+        isParticipant(_addr);
         require(participantToRemove == address(0x0), "There is a voting already in process.");
         require(participantsNum > 1, "You can't start a voting with just one participant.");
         participantToRemove = _addr;
         votes = 0;
-        calculateVotesRequired();
+        if(participantsNum == 1 || participantsNum == 2) {
+            votesRequired = 1;
+        }
+        else {
+            votesRequired = participantsNum / 2 + 1;
+            if(votesRequired >= participantsNum) {
+                votesRequired = participantsNum - 1;
+            }
+        }
     }
 
-    function cancelParticipantVoting() public isOwner isNotClosed isVotinginProcess {
+    function cancelParticipantVoting() public {
+        isOwner();
+        isNotClosed();
+        isVotinginProcess();
         participantToRemove = address(0x0);
     }
-    function voteForRemoval() public isNotClosed isParticipant(msg.sender) isVotinginProcess {
+    function voteForRemoval() public {
+        isNotClosed();
+        isParticipant(msg.sender);
+        isVotinginProcess();
         require(participantToRemove != msg.sender, "You can't vote in your own removal.");
-        require(participantsVote[msg.sender] == true, "You already voted.");
+        require(participantsVote[msg.sender] == false, "You already voted.");
         participantsVote[msg.sender] = true;
         if(votes + 1 == votesRequired) {
             votingSuccess();
@@ -200,32 +193,35 @@ contract Project is CommonUtilities {
         }
     }
 
-    function leaveContract() public payable
-    isNotClosed isParticipant(msg.sender) {
+    function leaveContract() public payable {
+        isNotClosed();
+        isParticipant(msg.sender);
         require(participantToRemove == msg.sender || participantToRemove == address(0x0), 'There is a removal voting in process.');
         removeParticipant(msg.sender);
         if(participantToRemove == msg.sender) {
             participantToRemove = address(0x0);
-        } else {
-            if(participantToRemove != address(0x0)) {
-                calculateVotesRequired();
-            }
         }
     }
 
     function getParticipant(address _addr) public view
-    isParticipant(_addr)
     returns (address paticipantAddress, uint participantPayment, bool paymentClaimed) {
+        isParticipant(_addr);
+        isOwnerOrParticipant();
         return (_addr, payments[_addr], claimed[_addr]);
     }
 
     function getAllParticipants() public view
-    isOwnerOrParticipant hasParticipants
     returns (string memory participantsAddresses) {
-        return getAddressesString(participants);
+        isOwnerOrParticipant();
+        if(participantsNum > 0) {
+            return getAddressesString(participants);
+        }
+        return "";
     }
 
-    function replaceFile(string memory _fileHash) public isOwner isNotClosed {
+    function replaceFile(string memory _fileHash) public {
+        isOwner();
+        isNotClosed();
         file = _fileHash;
         if(bytes(_fileHash).length == 0) {
             emit fileDeleted();
@@ -235,26 +231,31 @@ contract Project is CommonUtilities {
     }
 
     function getFile() public view
-    isOwnerOrParticipant
     returns (string memory filesHashes) {
+        isOwnerOrParticipant();
         return file;
     }
 
-    function claimPayment() public payable
-    isClosed isParticipant(msg.sender) {
+    function claimPayment() public payable {
+        isParticipant(msg.sender);
+        require(true == closed, 'The contract is not closed yet.');
         require(claimed[msg.sender] == false, 'You already claimed your payment.');
         claimed[msg.sender] = true;
         msg.sender.transfer(payments[msg.sender]);
     }
 
-    function finalize() public isParentContract isNotClosed hasParticipants {
+    function finalize() public {
+        isNotClosed();
+        isParentContract();
+        require(participantsNum > 0, 'You can\'t finalize a project without adding any participant.');
         closed = true;
         emit contractFinalized();
     }
 
-    function cancel() public payable
-    isParentContract isNotClosed {
-        require(participants.addressIndexes[address(0x0)][NEXT] == address(0x0), 'All participants must leave before cancelling the contract.');
+    function cancel() public payable {
+        isNotClosed();
+        isParentContract();
+        require(participantsNum == 0, 'All participants must leave before cancelling the contract.');
         selfdestruct(owner);
         emit contractCancelled();
     }
