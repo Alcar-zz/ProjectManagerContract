@@ -1,0 +1,25 @@
+.add-project-main {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.add-project-main h2 {
+    text-align: center;
+    padding-bottom: 24px;
+}
+
+.add-project-content {
+    background: white;
+    padding: 24px 40px;
+    border-radius: 0.8em;
+    box-shadow: 0 0 15px -8px rgba(0,0,0,0.8);
+}
+
+.add-project-submit-wrapper {
+    padding-top: 16px
+}
+
+.add-project-submit-wrapper .btn {
+    font-size: 1.1em;
+}

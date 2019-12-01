@@ -1,0 +1,17 @@
+.project-fieldset {
+    width: 100%;
+    display: flex;
+    padding: 16px 0;
+}
+.project-label {
+    padding-bottom: 12px;
+    padding-left: 12px;
+    color: var(--primary-blue);
+    font-weight: bold;
+}
+.project-input {
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: 0.9em;
+    border: 2px solid var(--light-blue)
+}

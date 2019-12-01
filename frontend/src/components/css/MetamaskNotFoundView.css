@@ -1,0 +1,48 @@
+.mm-not-found-main {
+    flex: 1 1;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.mm-not-found-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px;
+    border-radius: 1em;
+    background: rgb(255, 162, 162);
+    color: rgb(252, 62, 62);
+    box-shadow: 0 0 15px -6px rgba(0,0,0,0.7);
+}
+
+.mm-not-found-content h2 {
+    font-size: 2em;
+}
+
+.mm-not-found-content p {
+    padding-top: 12px;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.metamask-link {
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    padding: 4px 16px;
+    border-radius: 0.8em;
+    border: 2px solid rgb(255, 99, 99);
+    background: rgb(255, 143, 143);
+    transition: box-shadow 0.1s ease-in-out;
+}
+
+.metamask-link:hover {
+    box-shadow: 0 0 15px -9px rgba(0,0,0,0.8);
+}
+
+.metamask-icon-wrapper {
+    width: 44px;
+    padding-right: 6px;
+}

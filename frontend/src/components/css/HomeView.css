@@ -1,0 +1,22 @@
+.home-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.empty-manager-message {
+    padding: 6px 16px;
+    border-radius: 0.8em;
+    background: var(--primary-blue);
+    color: white;
+    font-size: 1.2em;
+}
+
+.add-project-plus-link {
+    margin-top: 32px;
+    width: 60px;
+}
+
+.add-project-plus * {
+    fill: var(--primary-blue)
+}
