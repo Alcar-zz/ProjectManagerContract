@@ -1,5 +1,6 @@
 pragma solidity ^0.5.8;
 import './Project.sol';
+import './CommonUtilities.sol';
 
 contract ProjectManager is CommonUtilities {
     Addresses projects;
@@ -22,10 +23,10 @@ contract ProjectManager is CommonUtilities {
         return true;
     }
 
-    function addProject() public
+    function addProject(string memory name) public
     returns (address addressContract) {
         isOwner();
-        Project p = new Project(owner);
+        Project p = new Project(owner, name);
         addElement(projects, address(p));
         emit projectAdded(address(p));
         return address(p);
