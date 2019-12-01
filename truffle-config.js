@@ -99,7 +99,7 @@ module.exports = {
          enabled: true,
          runs: 1200
        },
-      //  evmVersion: "byzantium"
+       evmVersion: "byzantium"
       }
     }
   }

@@ -12,13 +12,13 @@ contract("ProjectManager Contract", async accounts => {
     })
 
     it("allows project's creation by the owner.", async () => {
-        let projectAddress = await managerContract.addProject();
+        let projectAddress = await managerContract.addProject('test');
         assert(projectAddress, 'project created');
     });
 
     it("does not allow project's creation by other user.", async () => {
         try {
-            projectAddress = await managerContract.addProject({from: secondAcc});
+            projectAddress = await managerContract.addProject('test2', {from: secondAcc});
             assert.fail();
         }catch (e) {
             assert.ok(/You aren't the owner of this contract/.test(e.message));
@@ -122,7 +122,7 @@ contract("ProjectManager Contract", async accounts => {
     });
 
     it("allows to delete a project that has no participants.", async () => {
-        await managerContract.addProject();
+        await managerContract.addProject('test2');
         let projectsAddresses = await managerContract.getProjects.call();
         let projectAddress = projectsAddresses.split(',')[0];
         await managerContract.deleteProject(projectAddress);

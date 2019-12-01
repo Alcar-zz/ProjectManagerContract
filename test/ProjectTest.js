@@ -15,9 +15,9 @@ contract("Project Contract", async accounts => {
 
     before(async () => {
         managerContract = await ProjectManager.deployed();
-        await managerContract.addProject();
-        await managerContract.addProject();
-        await managerContract.addProject();
+        await managerContract.addProject('test1');
+        await managerContract.addProject('test2');
+        await managerContract.addProject('test3');
         let res = await managerContract.getProjects()
         res = res.split(',');
         projectContract = await Project.at(res[0]);
@@ -434,7 +434,38 @@ contract("Project Contract", async accounts => {
         }
     });
 
-    // it("", async () => {
+    it("allows the owner to rename a project", async () => {
+        let result = await otherProjectContract.getProjectData();
+        assert.notEqual(result.name, 'test4');
+        await otherProjectContract.rename('test4');
+        result = await otherProjectContract.getProjectData();
+        assert.equal(result.name, 'test4');
+    })
 
-    // })
+    it("does not allow to use the same name when renaming a project.", async () => {
+        try {
+            await otherProjectContract.rename('test4');
+            assert.fail();
+        } catch(e) {
+            assert.ok(/New name must be different/.test(e.message));
+        }
+    })
+
+    it("does not allow any other user besides the owner to rename a project", async () => {
+        try {
+            await otherProjectContract.rename('test4', {from: secondAcc});
+            assert.fail();
+        } catch(e) {
+            assert.ok(/You aren't the owner of this contract/.test(e.message));
+        }
+    })
+
+    it("does not allow to rename a project after it was finalized", async () => {
+        try {
+            await projectContract.rename('test4');
+            assert.fail();
+        } catch(e) {
+            assert.ok(/The contract is already closed./.test(e.message));
+        }
+    })
 });
