@@ -19,10 +19,10 @@ contract("Project Contract", async accounts => {
         await managerContract.addProject('test2');
         await managerContract.addProject('test3');
         let res = await managerContract.getProjects()
-        res = res.split(',');
-        projectContract = await Project.at(res[0]);
-        otherProjectContract = await Project.at(res[1]);
-        yetAnotherProjectContract = await Project.at(res[2]);
+        res = JSON.parse(res.projectsData);
+        projectContract = await Project.at(res[0].address);
+        otherProjectContract = await Project.at(res[1].address);
+        yetAnotherProjectContract = await Project.at(res[2].address);
     })
 
     it("allows participants's addition by the owner.", async () => {

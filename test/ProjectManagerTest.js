@@ -9,6 +9,7 @@ contract("ProjectManager Contract", async accounts => {
 
     before(async () => {
         managerContract = await ProjectManager.deployed();
+        anotherManagerContract = await ProjectManager.new();
     })
 
     it("allows project's creation by the owner.", async () => {
@@ -28,8 +29,9 @@ contract("ProjectManager Contract", async accounts => {
     it("allows to check if this is a valid ProjectManagerContract.", async () => {
         let isValidPMContract = await managerContract.isPMContract();
         assert.equal(isValidPMContract, true);
-        let projectsAddresses = await managerContract.getProjects.call();
-        let notAValidManagerContract = await ProjectManager.at(projectsAddresses.split(',')[0]);
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
+        let notAValidManagerContract = await ProjectManager.at(res[0].address);
         try {
             isValidPMContract = await notAValidManagerContract.isPMContract();
             assert.fail()
@@ -62,10 +64,16 @@ contract("ProjectManager Contract", async accounts => {
         await managerContract.getProjects.call({from: thirdAcc});
     });
 
+    it("returns an empty array as a json string when there are not any project", async () => {
+        // owner
+        let result = await anotherManagerContract.getProjects.call();
+        assert.equal(result.projectsData, "[]");
+    });
+
     it("does not allow to delete or finalize a project without doing it through the project manager contract", async () => {
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
-        let projectContract = await Project.at(projectAddress);
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
+        let projectContract = await Project.at(res[0].address);
         try {
             await projectContract.finalize();
             assert.fail();
@@ -81,10 +89,10 @@ contract("ProjectManager Contract", async accounts => {
     });
 
     it("does not allow to finalize a project that has no participants.", async () => {
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
         try {
-            await managerContract.finalizeProject(projectAddress);
+            await managerContract.finalizeProject(res[0].address);
             assert.fail();
         } catch (e) {
             assert.ok(/You can't finalize a project without adding any participant/.test(e.message));
@@ -92,12 +100,12 @@ contract("ProjectManager Contract", async accounts => {
     });
 
     it("allow to finalize a project that has participants.", async () => {
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
-        let projectContract = await Project.at(projectAddress);
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
+        let projectContract = await Project.at(res[0].address);
         try {
             await projectContract.addParticipant(secondAcc, {value: 1});
-            await managerContract.finalizeProject(projectAddress);
+            await managerContract.finalizeProject(projectContract.address);
             assert.ok(true);
         } catch (e) {
             assert.fail();
@@ -105,16 +113,16 @@ contract("ProjectManager Contract", async accounts => {
     });
 
     it("does not allow to finalize or delete a project that is already finalized.", async () => {
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
         try {
-            await managerContract.deleteProject(projectAddress);
+            await managerContract.deleteProject(res[0].address);
             assert.fail();
         } catch (e) {
             assert.ok(/The contract is already closed/.test(e.message));
         }
         try {
-            await managerContract.finalizeProject(projectAddress);
+            await managerContract.finalizeProject(res[0].address);
             assert.fail();
         } catch (e) {
             assert.ok(/The contract is already closed/.test(e.message));
@@ -123,8 +131,8 @@ contract("ProjectManager Contract", async accounts => {
 
     it("allows to delete a project that has no participants.", async () => {
         await managerContract.addProject('test2');
-        let projectsAddresses = await managerContract.getProjects.call();
-        let projectAddress = projectsAddresses.split(',')[0];
-        await managerContract.deleteProject(projectAddress);
+        let res = await managerContract.getProjects.call();
+        res = JSON.parse(res.projectsData);
+        await managerContract.deleteProject(res[0].address);
     });
 });
