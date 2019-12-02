@@ -14,6 +14,7 @@ contract Project is CommonUtilities {
     uint votesRequired;
     uint votes;
     string projectName;
+    uint projectCreatedAt;
 
     event participantAdded(address participant);
     event participantRemoved(address participant);
@@ -26,6 +27,7 @@ contract Project is CommonUtilities {
     public {
         parentContract = msg.sender;
         projectName = _name;
+        projectCreatedAt = block.timestamp;
     }
 
     function isNotClosed() internal view  {
@@ -54,9 +56,21 @@ contract Project is CommonUtilities {
     }
 
     function getProjectData() public view
-    returns (string memory name,bool isProjectClosed, address vontingInProcess, string memory fileHash) {
+    returns (
+        string memory name,
+        string memory createdAt,
+        string memory isProjectClosed,
+        string memory vontingInProcess,
+        string memory fileHash
+    ) {
         isOwnerOrParticipant();
-        return (projectName, closed, participantToRemove, file);
+        return (
+            projectName,
+            uintToString(projectCreatedAt),
+            closed == true ? 'true' : 'false',
+            participantToRemove != address(0x0) ? _addressToString(participantToRemove) : 'false',
+            file
+        );
     }
 
     function rename(string memory newName) public  {

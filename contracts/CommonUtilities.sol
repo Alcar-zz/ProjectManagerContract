@@ -42,6 +42,26 @@ contract CommonUtilities {
         return string(str);
     }
 
+    function uintToString(uint _i) internal pure returns (string memory _uintAsString) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint j = _i;
+        uint len;
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(len);
+        uint k = len - 1;
+        j = _i;
+        while (j != 0) {
+            bstr[k--] = byte(uint8(48 + j % 10));
+            j /= 10;
+        }
+        return string(bstr);
+    }
+
     function removeElement(Addresses storage addresses, address _addr) internal  {
         // Stitch the neighbours together
         addresses.addressIndexes[addresses.addressIndexes[_addr][PREV]][NEXT] = addresses.addressIndexes[_addr][NEXT];
