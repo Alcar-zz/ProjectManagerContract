@@ -15,3 +15,5 @@ export const WASA = 1000000;
 export const AVO = 1000000;
 
 export const GAR = 1000000;
+
+export const timezone = "+0000";

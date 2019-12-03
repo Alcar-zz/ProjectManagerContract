@@ -1,0 +1,23 @@
+.payment-inputs fieldset:first-of-type select {
+    padding: 10px 12px
+}
+.payment-inputs {
+    padding-top: 16px;
+}
+.payment-inputs fieldset:first-of-type {
+    width: 140px;
+    padding-right: 8px;
+}
+
+@media (min-width: 469px) {
+    .payment-inputs fieldset {
+        padding: 0px;
+    }
+    .payment-inputs fieldset:last-of-type {
+        width: unset;
+        flex: 1;
+    }
+    .payment-inputs fieldset {
+        padding: 0px;
+    }
+}

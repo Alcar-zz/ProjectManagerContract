@@ -1,0 +1,86 @@
+.project-element-wrapper {
+    padding: 12px;
+}
+
+.project-element {
+    background: white;
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    border-radius: 0.8em;
+    box-shadow: 0 0 15px -8px rgba(0,0,0,0.6);
+}
+
+.project-element-info {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-element-name {
+    color: var(--dark-blue);
+    font-size: 1.3em;
+}
+
+.project-element-info > span:first-child,
+.project-element-name {
+    font-weight: bold;
+}
+.project-element-info > span:first-child {
+    padding-right: 6px;
+}
+
+.project-element-address {
+    color: inherit;
+    font-size: 0.9em;
+}
+
+.project-element-address:hover {
+    text-decoration: underline;
+}
+
+.project-element-date {
+    letter-spacing: 0.6px;
+}
+
+.project-info-yes {
+    color: rgb(59, 218, 39)
+}
+
+.project-info-no {
+    color: rgb(252, 62, 62);
+}
+
+.project-element-info-buttons {
+    justify-content: flex-end;
+    padding-top: 12px;
+
+}
+.project-element-info-button:not(:first-child) {
+    margin-left: 8px;
+}
+.project-element-info-button > svg {
+    height: 100%;
+}
+.project-element-info-button > svg * {
+    fill: white;
+}
+.project-element-info-button {
+    background: var(--dark-blue);
+    width: 35px;
+    height: 35px;
+    border-radius: 0.4em;
+    padding: 4px;
+    display: flex;
+    box-shadow: 0 0 6px -1px rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+}
+.project-element-info-button.delete-button {
+    padding: 5px;
+}
+
+.project-element-info-button .lds-spinner-wrapper .lds-spinner div:after {
+    background: white;
+}

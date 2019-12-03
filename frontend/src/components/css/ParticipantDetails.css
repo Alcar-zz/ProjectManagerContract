@@ -1,0 +1,30 @@
+.participant-wrapper a {
+    display: block;
+    color: inherit;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.participant-wrapper a:hover {
+    text-decoration: underline;
+}
+
+.participant-wrapper a,
+.participant-wrapper p > span,
+.participant-wrapper p.claimed,
+.participant-wrapper p.not-claimed {
+    font-weight: bold;
+}
+
+.participant-wrapper p > span {
+    padding-right: 6px;
+}
+
+.participant-wrapper p.claimed {
+    color: rgb(59, 218, 39);
+}
+
+.participant-wrapper p.not-claimed {
+    color: rgb(252, 62, 62);
+}
+

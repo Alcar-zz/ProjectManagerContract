@@ -6,6 +6,13 @@ import reduxImmutableStateInvariant from 'redux-immutable-state-invariant';
 
 // reducers
 import metamaskReducer from './metamaskReducer';
+import projectReducer from './projectReducer';
+
+export const promiseSuffixes = {
+	success: '_SUCCESS',
+	start: '_START',
+	error: '_ERROR',
+}
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ ;
 
@@ -27,7 +34,8 @@ export function configureStore() {
 // reducers
 function rootReducer() {
 	return combineReducers({
-		metamaskReducer
+		metamaskReducer,
+		projectReducer,
 	});
 }
 

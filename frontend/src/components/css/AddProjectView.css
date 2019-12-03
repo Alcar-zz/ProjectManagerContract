@@ -23,3 +23,49 @@
 .add-project-submit-wrapper .btn {
     font-size: 1.1em;
 }
+
+.error-message,
+.success-message {
+    margin-top: 24px;
+    padding: 8px 12px;
+    text-align: center;
+}
+
+.success-message {
+    background: rgb(195, 255, 187);
+    color: rgb(71, 202, 54)
+}
+
+.error-message {
+    background: rgb(255, 201, 201);
+    color: rgb(252, 62, 62);
+}
+
+.message-title {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.message-tx {
+    word-break: break-all;
+    padding-top: 8px; 
+}
+
+.mensage-etherscan-link {
+    color: inherit;
+    margin-top: 16px; 
+    font-weight: bold;
+}
+
+.mensage-etherscan-link:hover {
+    text-decoration: underline;
+}
+
+.error-message .opent-at-etherscan-arrow svg * {
+    fill: rgb(252, 62, 62);
+}
+
+.success-message .opent-at-etherscan-arrow svg * {
+    fill: rgb(71, 202, 54);
+}
+

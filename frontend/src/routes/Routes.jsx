@@ -6,14 +6,17 @@ import Root from "../components/Root";
 // import LoadingScreen from "../components/LoadingScreen";
 // import ErrorView from '../components/ErrorView';
 // routes props
-import allRoutes from "./routesPropsByUser";
+import allRoutes, { addRoute } from "./routesPropsByUser";
 import MetamaskNotFoundView from "../components/MetamaskNotFoundView";
 import MainLoader from "../components/MainLoader";
+import { projectManagerAbi, contractAddress } from "../utils/contracts";
+
 
 class Routes extends Component {
     constructor(props) {
         super(props);
         this.setAccount = this.setAccount.bind(this);
+        this.addProject = this.addProject.bind(this);
         this.initializeMetamask = this.initializeMetamask.bind(this);
     }
 
@@ -22,12 +25,43 @@ class Routes extends Component {
     }
 
     shouldComponentUpdate(nextProps) {
-        const { metamaskExist: nextMetamaskExist } = nextProps;
-        const { metamaskExist } = this.props;
+        const { metamaskExist: nextMetamaskExist, isOwner: nextIsOwner } = nextProps;
+        const { metamaskExist, isOwner } = this.props;
         if (metamaskExist !== nextMetamaskExist) {
+            if(metamaskExist !== 'enable' && nextMetamaskExist === 'enabled') {
+                const ProjectManager = new window.web3.eth.Contract(projectManagerAbi, contractAddress);
+                this.projectAddedListener = ProjectManager.events.allEvents()
+                    .on('data', this.addProject)
+                    .on('changed', console.log)
+                    .on('error', console.log)
+            }
+            if(metamaskExist === 'enable' && nextMetamaskExist !== 'enabled') {
+                this.projectAddedListener.unsubscribe();
+            }
+            return true;
+        }
+        if (nextIsOwner !== isOwner) {
             return true;
         }
         return false;
+    }
+
+    addProject(data) {
+        console.log(data);
+        switch(data.event) {
+            case 'projectAdded':
+                const ProjectManager = new window.web3.eth.Contract(projectManagerAbi, contractAddress);
+                this.props.addProject(ProjectManager.methods.getProject(data.returnValues.project)
+                    .call({from: this.props.account}), data.returnValues.project)
+                    .catch(console.log);
+                break;
+            case 'projectFinalized':
+            case 'projectCancelled':
+                this.props[`${data.event === 'projectFinalized' ? 'finalize' : 'cancel'}ProjectEvent`](data.returnValues.project.toLowerCase());
+                break;
+            default:
+                break; 
+        }
     }
 
     setAccount(accounts) {
@@ -35,22 +69,22 @@ class Routes extends Component {
     }
 
     async initializeMetamask() {
+        if(typeof window.ethereum === 'undefined' && typeof window.web3 === 'undefined') {
+            return this.props.setMetamask(false);
+        }
         if (window.ethereum) {
             window.web3 = new Web3(window.ethereum);
             try {
                 const accounts = await window.ethereum.enable();
-                window.ethereum.on('accountsChanged', this.setAccount)
+                window.ethereum.on('accountsChanged', this.setAccount);
                 this.props.changeAccount(accounts[0], 'enabled');
             } catch (error) {
-                this.props.setMetamask('denied')
+                this.props.setMetamask('denied');
             }
         }
-        else if (window.web3) {
+        else {
             window.web3 = new Web3(window.web3.currentProvider);
             this.props.changeAccount(window.web3.eth.accounts[0], 'enabled');
-        }
-        else {
-            this.props.setMetamask(false)
         }
     }
 
@@ -65,7 +99,7 @@ class Routes extends Component {
         )
     }
 
-    renderContent(metamaskExist) {
+    renderContent(metamaskExist, isOwner) {
         switch(metamaskExist) {
             case 'loading': 
                 return  (
@@ -82,6 +116,7 @@ class Routes extends Component {
                         {allRoutes.map(routeProps => (
                             <Route {...routeProps} />
                         ))}
+                        {isOwner && <Route {...addRoute} />}
                         <Route render={() => <Redirect to="/"/> }/>
                     </Switch>
                 );
@@ -91,10 +126,10 @@ class Routes extends Component {
     }
 
     render() {
-        const { metamaskExist } = this.props;
+        const { metamaskExist, isOwner } = this.props;
         return (
             <Root wallet={this.props.wallet}>
-                {this.renderContent(metamaskExist)}
+                {this.renderContent(metamaskExist, isOwner)}
             </Root>
         );
     }

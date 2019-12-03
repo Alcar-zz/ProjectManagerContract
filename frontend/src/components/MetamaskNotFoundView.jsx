@@ -25,6 +25,7 @@ class MetamaskNotFoundView extends React.Component {
                 >
                     <div className="metamask-icon-wrapper">
                         <img
+                            alt="metamask-icon"
                             src={metamask}
                             className="metamask-icon"
                         />

@@ -2,21 +2,10 @@
 import moment from 'moment';
 // importing global root css
 import BigNumber from 'bignumber.js';
-import Ajax from './ajax';
-// socket
-import { connectWithSocket } from '../utils/socketHandler';
-import { getUnreadCount, addPopNotification, removePopNotificationItem } from '../redux/notificationActions';
-// actions
-import { dispatch } from '../App';
-import { logout, setUserData } from '../redux/sessionActions';
-import { getCurrentBreakpoint } from '../redux/matchMediaActions';
 // global
-import { userRoles, root } from '../configs/global';
-import { getGlobalConfigurations } from '../redux/configurationActions';
-import { setModalVisibility } from '../redux/utilityActions';
+import { root } from '../configs/global';
 import { timezone } from '../configs/global';
 
-let fetchConfigurationTimeout;
 
 const usdNumberFormat = {
     decimalSeparator: '.',
@@ -24,45 +13,21 @@ const usdNumberFormat = {
     groupSize: 3
 }
 
+
+
+export function isValidAddress(address) {
+    const unprefixedAddress = address.replace(/^0x/, '');
+    if (/^([A-Fa-f0-9]{40})$/.test(unprefixedAddress))
+        return unprefixedAddress;
+    else
+        return false;
+}
+
 export const isMac = navigator.userAgent.indexOf("Mac") !== -1;
-
-export function showMenuStatusWarning() {
-    dispatch(setModalVisibility(
-        true,
-        '¡Oh, oh!',
-        'Sólo puedes realizar esta acción, antes de la apertura diaria de tu menú.'
-    ))
-}
-
-export function retryFetchGlobalConfigurations() {
-    if (!navigator.onLine)
-        return;
-    if (fetchConfigurationTimeout)
-        window.clearTimeout(fetchConfigurationTimeout);
-
-    fetchConfigurationTimeout = setTimeout(() => {
-            dispatch(getGlobalConfigurations(new Ajax('configuration')))
-            .then(() => window.clearTimeout(fetchConfigurationTimeout))
-            .catch(retryFetchGlobalConfigurations)
-    }, 5000);
-}
 
 
 export function formatNotificationNumbers(count) {
     return count > 99 ? '+99' : count;
-}
-
-export function showSuccessPopNotification(id, description, title) {
-    if(description) {
-        return dispatch(
-            addPopNotification({
-                type: 'success',
-                id,
-                description,
-                title
-            })
-        )
-    }
 }
 
 export function formatDate(date, tz) {
@@ -80,12 +45,6 @@ export function formatNodeJSDate(date) {
         return date.replace('T', ' ').replace(/(\.\d*)?Z/, '+0200')
     }
     return date + timezone;
-}
-
-export function setLoginData(data) {
-    Ajax.token = data.token;
-    dispatch(setUserData(data));
-    connectWithSocket(data);
 }
 
 export function compareStatus(status, value, operator) {
@@ -119,21 +78,6 @@ export function toCustomFormat(value, length = 2, format = usdNumberFormat) {
     }
     return new BigNumber(value).toFormat(length, format);
 }
-
-let feetchNotificationsTries = 3;
-export async function getCountUnreadNotifications() {
-    try {
-        const ajax = new Ajax('notification/count_unread_notifications');
-        await dispatch(getUnreadCount(ajax));
-    } catch (e) {
-        console.log('here');
-        if ( feetchNotificationsTries > 0 && navigator.onLine ) {
-            feetchNotificationsTries -= 1;
-            getCountUnreadNotifications();
-        }
-    }
-}
-
 export function saveSetState(state, callback) {
     if (this.active) {
         this.setState(state, callback);
@@ -375,11 +319,13 @@ export function addValueOnAllObjects(arrObj, object) {
 
 export function arrayObjectToKeyData(arrObj, dataKey = 'id', arrayKeyName = 'ids') {
     const object = {};
-    arrObj.forEach(obj => object[ obj[dataKey] ] = obj)
-    return {
-        [arrayKeyName]: pluckObjectArray(arrObj, dataKey),
-        ...object,
-    };
+    const ids = [];
+    arrObj.forEach(obj => {
+        object[ obj[dataKey] ] = obj
+        ids.push(obj[dataKey]);
+    })
+    object[arrayKeyName] = ids;
+    return object;
 }
 
 export function getCartItemIds(cartItemIds, newCartItemId) {
@@ -461,19 +407,6 @@ export function getObservations() {
 }
 export function getObservationsValue({value}) {
     return this.observations = value;
-}
-export function setMatchMedia(queries) {
-    if(matchMedia) {
-        Object.keys(queries).forEach(breakpoint => {
-            queries[breakpoint].addListener(getCurrentBreakpoint)
-            getCurrentBreakpoint(queries[breakpoint]);
-        });
-    }
-}
-export function unsetMatchMedia(queries) {
-    Object.keys(queries).forEach(breakpoint => {
-        queries[breakpoint].removeListener(getCurrentBreakpoint);
-    });
 }
 function plusOrSubtract(operation, value) {
     if (operation === 'plus') 
@@ -575,14 +508,6 @@ export function objIsNotEmpty(obj) {
     }
 }
 
-export function popNotification(data, replaceAll = false) {
-    dispatch(addPopNotification(data, replaceAll));
-}
-
-export function deletePopNotification(id = null) {
-    dispatch(removePopNotificationItem(id));
-}
-
 export function setRef(variableName, callback, DOMElement) {
     if (DOMElement) {
         this[variableName] = DOMElement;
@@ -594,18 +519,6 @@ export function setRef(variableName, callback, DOMElement) {
 
 export function arrayUnique(value, index, self) { 
     return self.indexOf(value) === index;
-}
-
-export function isAdminOrSuperadmin(role) {
-    return userRoles.admin === role || userRoles.superadmin === role;
-}
-
-export function isRestaurant(role) {
-    return userRoles.restaurant === role;
-}
-
-export function isClient(role) {
-    return userRoles.client === role;
 }
 
 export function formatRif(input) {
@@ -665,51 +578,4 @@ export function ErrorView(data, context) {
         ...data,
     };
     this.stack = (new Error()).stack;
-}
-
-
-export function getAudioBuffer(audio) {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    return new Promise((resolve, reject) => {
-        new Ajax(audio, {
-            useBaseUrl: false,
-            responseType: 'arraybuffer',
-        })
-        .result()
-        .then((response) => {
-            audioCtx.decodeAudioData(
-                response.arraybuffer,
-                (audioBuffer) => {
-                    resolve(audioBuffer)
-                },
-                reject
-            );
-        })
-        .catch(reject);
-    });
-}
-
-export function playAudioArrayBuffer(audioBuffer) {
-    try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let source = audioCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioCtx.destination);
-        source.loop = false;
-        source.start();
-    } catch (e) {
-        console.log(e);
-    }
-}
-
-export function exit(evt) {
-    const ajax = new Ajax('logout', {
-        method: 'POST',
-        body: {
-            notification_token: window.__notificationToken,
-        },
-    });
-    dispatch(logout(ajax));
-    if (evt)
-        evt.preventDefault();
 }

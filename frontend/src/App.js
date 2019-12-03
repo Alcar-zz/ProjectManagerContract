@@ -3,7 +3,6 @@ import { Provider } from "react-redux";
 import { BrowserRouter as Router } from "react-router-dom";
 import { configureStore } from "./redux/store";
 import RoutesContainer from "./containers/RoutesContainer";
-import Ajax from "./utils/ajax";
 import BigNumber from "bignumber.js";
 
 
@@ -14,6 +13,7 @@ export const getState = store.getState;
 
 const App = () => {
     BigNumber.set({
+        EXPONENTIAL_AT:[-20,20],
         FORMAT: {
             ...BigNumber.FORMAT,
             decimalSeparator: ".",

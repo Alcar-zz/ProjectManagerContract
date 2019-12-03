@@ -41,7 +41,7 @@ class Input extends React.Component {
                                 key={`option-${element}`}
                                 value={element}
                             >
-                                0x{element}
+                                {element}
                             </option>
                         ))}
                     </select>

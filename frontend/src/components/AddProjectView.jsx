@@ -1,11 +1,11 @@
 import React from 'react';
 import Input from './Input';
 import Web3 from 'web3';
+import { projectManagerAbi, contractAddress, projectAbi } from '../utils/contracts';
+// components
+import Loader from './Loader';
 // css
 import './css/AddProjectView.css'
-import { projectManagerAbi, contractAddress, projectAbi } from '../utils/contracts';
-import Loader from './Loader';
-
 
 
 class AddProjectView extends React.Component {
@@ -21,13 +21,15 @@ class AddProjectView extends React.Component {
 
     componentDidMount() {
         this.tx = "0xe8739c14ada03476c242b317e9851b5d9df11d7c8cfc4f91055447d810c0d461";
-        window.web3.eth.getTransaction(this.tx)
-            .then(console.log)
-            .catch(console.log);
+        // window.web3.eth.getTransaction(this.tx)
+        //     .then(console.log)
+        //     .catch(console.log);
     }
 
     state = {
         loading: false,
+        success: false,
+        error: false,
     }
 
     onChange({value}) {
@@ -40,22 +42,56 @@ class AddProjectView extends React.Component {
 
     onSubmit(e) {
         e.preventDefault();
-        this.setState({ loading: true });
+        if(this.props.loading) return;
+        this.setState({ loading: true, success: null, error: null });
         this.ProjectManager.methods.addProject(this.name.trim()).send({
             from: this.props.account
         })
         .then(tx => {
             console.log(tx);
-            this.setState({ loading: false });
+            this.setState({ loading: false, success: true });
         })
         .catch(err => {
-            console.log(err);
-            this.setState({ loading: false });
+            let errorType = /User denied transaction signature/i.test(err.message) ? "signature" : "txerror";
+            this.setState({ loading: false, error: errorType });
         });
     }
 
+    renderMessange() {
+        const { success, error } = this.state;
+        if(success) {
+            return (
+                <div className="success-message flex-c-h-center">
+                    <p className="message-title">Project added successfully.</p>
+                    <p className="message-tx">You can see the details in Metamask.</p>
+                </div>
+            )
+        }
+        if(error) {
+            let ErrorComponent;
+            switch(error) {
+                case 'signature': 
+                    ErrorComponent = <p>Trasaction canceled</p>
+                    break;
+                default:
+                    ErrorComponent = (
+                        <React.Fragment>
+                            <p className="message-title">Failed to add project.</p>
+                            <p className="message-tx">You can see the reason in Metamask.</p>
+                        </React.Fragment>
+                    )
+                    break;
+            }
+            return (
+                <div className="error-message flex-c-h-center">
+                    {ErrorComponent}
+                </div>
+            )
+        }
+    }
+
     render() {
-        const { loading } = this.state;
+        const { success, error, loading } = this.state;
         return (
             <main className="add-project-main flex-1 flex-c-v-center">
                 <div className="add-project-content">
@@ -93,6 +129,12 @@ class AddProjectView extends React.Component {
                             )}
                         </div>
                     </form>
+
+                    {(error || success) && (
+                        <div className="flex-r-h-center">
+                            {this.renderMessange()}
+                        </div>
+                    )}
                 </div>
             </main>
         )

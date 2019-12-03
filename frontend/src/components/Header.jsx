@@ -1,7 +1,5 @@
 import React from 'react';
 import { withRouter } from 'react-router';
-import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
 import HeaderTitle from './HeaderTitle';
 // css
 import './css/Header.css'

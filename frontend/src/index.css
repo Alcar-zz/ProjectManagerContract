@@ -80,6 +80,10 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+a,button {
+    cursor: pointer;
+}
+
 #root, body {
     flex: 1;
     display: flex;
@@ -866,4 +870,14 @@ body div.toggle-button-wrapper {
 
 .main-loader {
     padding: 60px ;
+}
+
+.opent-at-etherscan-arrow {
+    width: 20px;
+    height: 16px;
+    padding-left: 6px
+}
+
+.opent-at-etherscan-arrow svg {
+    height: 100%;
 }

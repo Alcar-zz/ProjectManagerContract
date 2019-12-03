@@ -5,7 +5,7 @@ const Loader =  (props) => {
     return (
         <div 
             className={`lds-spinner-wrapper ${wrapperClassName}`}
-            {...(size && {'spinner-size': size} || {})}
+            {...((size && {'spinner-size': size}) || {})}
             {...wrapperProps}
         >
             <div className={className}>

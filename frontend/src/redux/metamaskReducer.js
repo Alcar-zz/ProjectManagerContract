@@ -1,5 +1,4 @@
-import { dispatch } from '../App';
-import { actions, changeAccount } from './metamaskActions';
+import { actions } from './metamaskActions';
 
 const initialState = {
     metamaskExist: 'loading'
