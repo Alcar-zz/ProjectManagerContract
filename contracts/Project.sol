@@ -18,10 +18,10 @@ contract Project is CommonUtilities {
 
     event participantAdded(address participant);
     event participantRemoved(address participant);
+    event paymentClaimed(address participant);
+    event voteStart(address participant);
     event fileAdded(string fileHash);
     event fileDeleted();
-    event contractFinalized();
-    event contractCancelled();
 
     constructor(address payable _owner, string memory _name) CommonUtilities(_owner)
     public {
@@ -54,23 +54,27 @@ contract Project is CommonUtilities {
     function isParentContract() internal view {
         require(msg.sender == parentContract, 'Must be called by the parent contract of this contract');
     }
-
-    function getProjectData() public view
-    returns (
-        string memory name,
-        string memory createdAt,
-        string memory isProjectClosed,
-        string memory vontingInProcess,
-        string memory fileHash
-    ) {
-        isOwnerOrParticipant();
-        return (
-            projectName,
-            uintToString(projectCreatedAt),
-            closed == true ? 'true' : 'false',
-            participantToRemove != address(0x0) ? _addressToString(participantToRemove) : 'false',
-            file
+    function formatProjectInfo() internal view returns (string memory) {
+        string memory addressString = _addressToString(address(this));
+        return string(
+            abi.encodePacked(
+                '{',
+                '"address": "', addressString,
+                '","name" : "', projectName,
+                '","createdAt" : ', uintToString(projectCreatedAt),
+                ',"participants" : ', uintToString(participantsNum),
+                ',"isProjectClosed" : ', closed == true ? 'true' : 'false',
+                ',"vontingInProcess" : "', participantToRemove != address(0x0) ? _addressToString(participantToRemove) : 'false',
+                '","fileHash" : "', file,
+                '"}'
+            )
         );
+    }
+
+    function getProjectData(address sender) public view
+    returns (string memory data) {
+        isParentContract();
+        return (payments[sender] > 0 || sender == owner) ? formatProjectInfo() : "";
     }
 
     function rename(string memory newName) public  {
@@ -132,6 +136,7 @@ contract Project is CommonUtilities {
         else {
             votesRequired = participantsNum / 2 + 1;
         }
+        emit voteStart(_addr);
     }
 
     function cancelParticipantVoting() public {
@@ -165,7 +170,7 @@ contract Project is CommonUtilities {
     }
 
     function getParticipant(address _addr) public view
-    returns (address paticipantAddress, uint participantPayment, bool paymentClaimed) {
+    returns (address paticipantAddress, uint participantPayment, bool didClaim) {
         isOwnerOrParticipant();
         isParticipant(_addr);
         return (_addr, payments[_addr], claimed[_addr]);
@@ -204,6 +209,7 @@ contract Project is CommonUtilities {
         require(claimed[msg.sender] == false, 'You already claimed your payment.');
         claimed[msg.sender] = true;
         msg.sender.transfer(payments[msg.sender]);
+        emit paymentClaimed(msg.sender);
     }
 
     function finalize() public {
@@ -211,14 +217,12 @@ contract Project is CommonUtilities {
         isNotClosed();
         require(participantsNum > 0, 'You can\'t finalize a project without adding any participant.');
         closed = true;
-        emit contractFinalized();
     }
 
     function cancel() public payable {
         isParentContract();
         isNotClosed();
         require(participantsNum == 0, 'All participants must leave before cancelling the contract.');
-        emit contractCancelled();
         selfdestruct(owner);
     }
 }

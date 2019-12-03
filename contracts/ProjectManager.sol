@@ -6,6 +6,8 @@ contract ProjectManager is CommonUtilities {
     Addresses projects;
 
     event projectAdded(address project);
+    event projectFinalized(address project);
+    event projectCancelled(address project);
 
     constructor() CommonUtilities(msg.sender) public  {}
 
@@ -15,28 +17,6 @@ contract ProjectManager is CommonUtilities {
             projects.addressIndexes[_addr][PREV] != address(0x0)||
             projects.addressIndexes[address(0x0)][NEXT] == _addr,
             'Project doesn\'t exist.'
-        );
-    }
-
-    function formatProjectInfo(
-        address _address,
-        string memory _name,
-        string memory _createdAt,
-        string memory _isProjectClosed,
-        string memory _vontingInProcess,
-        string memory _fileHash
-    ) internal pure returns (string memory) {
-        return string(
-            abi.encodePacked(
-                "{",
-                '"address": "', _addressToString(_address),
-                '","name" : "', _name,
-                '","createdAt" : ', _createdAt,
-                ',"isProjectClosed" : ', _isProjectClosed,
-                ',"vontingInProcess" : "', _vontingInProcess,
-                '","fileHash" : "', _fileHash,
-                '"}'
-            )
         );
     }
 
@@ -61,25 +41,33 @@ contract ProjectManager is CommonUtilities {
         }
         address current = projects.addressIndexes[address(0x0)][NEXT];
         Project aux = Project(current);
-        (string memory name,string memory createdAt,string memory isProjectClosed,
-        string memory vontingInProcess,string memory fileHash) = aux.getProjectData();
+        string memory data = aux.getProjectData(msg.sender);
         string memory _addresses = string(
             abi.encodePacked(
                 "[",
-                formatProjectInfo(current,name,createdAt,isProjectClosed,vontingInProcess,fileHash)
+                data
             )
         );
         current = projects.addressIndexes[current][NEXT];
         while (current != address(0x0)) {
             aux = Project(current);
-            (name,createdAt,isProjectClosed,vontingInProcess,fileHash) = aux.getProjectData();
-            _addresses = string(
-                abi.encodePacked(_addresses,",",formatProjectInfo(current,name,createdAt,isProjectClosed,vontingInProcess,fileHash))
-            );
+            data = aux.getProjectData(msg.sender);
+            if(bytes(data).length != 0) {
+                _addresses = string(
+                    abi.encodePacked(_addresses,",",data)
+                );
+            }
             current = projects.addressIndexes[current][NEXT];
         }
         _addresses = string(abi.encodePacked(_addresses,"]"));
         return (_addresses, msg.sender == owner);
+    }
+
+    function getProject(address _project) public view
+    returns (string memory projectsData, bool isUserOwner) {
+        projectExist(_project);
+        Project aux = Project(_project);
+        return (aux.getProjectData(msg.sender), msg.sender == owner);
     }
 
     function finalizeProject(address _addr) public {
@@ -87,6 +75,7 @@ contract ProjectManager is CommonUtilities {
         projectExist(_addr);
         Project p = Project(_addr);
         p.finalize();
+        emit projectFinalized(_addr);
     }
 
     function deleteProject(address _addr) public {
@@ -95,5 +84,6 @@ contract ProjectManager is CommonUtilities {
         Project p = Project(_addr);
         p.cancel();
         removeElement(projects, address(p));
+        emit projectCancelled(_addr);
     }
 }

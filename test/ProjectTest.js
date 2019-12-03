@@ -74,21 +74,17 @@ contract("Project Contract", async accounts => {
         }
     })
 
-    it("allow participants, owner and parent contract to get project data.", async () => {
-        // owner
-        await projectContract.getProjectData.call();
-        // participant
-        await projectContract.getProjectData.call({from: secondAcc});
+    it("allows the parent contract to get project data.", async () => {
         // parent contract
-        await projectContract.getProjectData.call({from: managerContract.address});
+        await projectContract.getProjectData.call(firstAcc, {from: managerContract.address});
     })
 
-    it("does not allow any user besides participants, owner and parent contract to get project data.", async () => {
+    it("does not allow any user besides the parent contract to get project data.", async () => {
         try {
-            await projectContract.getProjectData.call({from: sixthAcc});
+            await projectContract.getProjectData.call(firstAcc, {from: firstAcc});
             assert.fail();
         } catch(e) {
-            assert.ok(/You aren't the owner or a participant of this contract/.test(e.message));
+            assert.ok(/parent contract/.test(e.message));
         }
     })
 
@@ -435,10 +431,12 @@ contract("Project Contract", async accounts => {
     });
 
     it("allows the owner to rename a project", async () => {
-        let result = await otherProjectContract.getProjectData();
+        let result = await managerContract.getProject(otherProjectContract.address);
+        result = JSON.parse(result.projectsData);
         assert.notEqual(result.name, 'test4');
         await otherProjectContract.rename('test4');
-        result = await otherProjectContract.getProjectData();
+        result = await managerContract.getProject(otherProjectContract.address);
+        result = JSON.parse(result.projectsData);
         assert.equal(result.name, 'test4');
     })
 
