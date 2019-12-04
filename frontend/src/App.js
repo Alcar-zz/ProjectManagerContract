@@ -23,7 +23,7 @@ const App = () => {
 
     return (
         <Provider store={store}>
-            <Router>
+            <Router basename={"/ipns/QmfDBNuB4gnKcLdkT4ttFYoRGTZmv2SXMmdwYg1BKPGeZN"}>
                 <RoutesContainer dispatch={dispatch} />
             </Router>
         </Provider>
