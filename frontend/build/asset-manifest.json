@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.css": "./static/css/main.9ffda037.chunk.css",
+    "main.js": "./static/js/main.9792cdc9.chunk.js",
+    "runtime-main.js": "./static/js/runtime-main.f23cecf6.js",
+    "static/js/2.a62651d5.chunk.js": "./static/js/2.a62651d5.chunk.js",
+    "index.html": "./index.html",
+    "precache-manifest.7196b54f7d3e077878c593fdb96cd2c4.js": "./precache-manifest.7196b54f7d3e077878c593fdb96cd2c4.js",
+    "service-worker.js": "./service-worker.js",
+    "static/media/index.css": "./static/media/Poppins-Thin.ca29a3f5.ttf",
+    "static/media/check-circle.978a276d.svg": "./static/media/check-circle.978a276d.svg",
+    "static/media/file.556bdece.svg": "./static/media/file.556bdece.svg",
+    "static/media/info.44e6e96c.svg": "./static/media/info.44e6e96c.svg",
+    "static/media/logout.289864ba.svg": "./static/media/logout.289864ba.svg",
+    "static/media/metamask.png": "./static/media/metamask.2e91abe3.png",
+    "static/media/plus.2f3bb4e2.svg": "./static/media/plus.2f3bb4e2.svg",
+    "static/media/trash.a47fec59.svg": "./static/media/trash.a47fec59.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.f23cecf6.js",
+    "static/js/2.a62651d5.chunk.js",
+    "static/css/main.9ffda037.chunk.css",
+    "static/js/main.9792cdc9.chunk.js"
+  ]
+}
